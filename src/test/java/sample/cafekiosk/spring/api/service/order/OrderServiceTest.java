@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Profile;
+import org.springframework.test.context.ActiveProfiles;
 import sample.cafekiosk.spring.api.service.order.request.OrderCreateRequest;
 import sample.cafekiosk.spring.api.service.order.response.OrderResponse;
 import sample.cafekiosk.spring.domain.product.Product;
@@ -25,7 +26,7 @@ import static sample.cafekiosk.spring.domain.product.ProductType.BAKERY;
 import static sample.cafekiosk.spring.domain.product.ProductType.HANDMADE;
 
 @SpringBootTest
-//@Profile("test")
+@ActiveProfiles("test")
 //@DataJpaTest
 class OrderServiceTest {
 
@@ -48,15 +49,15 @@ class OrderServiceTest {
         OrderCreateRequest orderCreateRequest = OrderCreateRequest.builder()
                 .productNumbers(List.of("001", "002"))
                 .build();
+        LocalDateTime now = LocalDateTime.now();
         // when
-        OrderResponse orderResponse = orderService.createOrder(orderCreateRequest, LocalDateTime.now());
+        OrderResponse orderResponse = orderService.createOrder(orderCreateRequest, now);
 
         // then
         assertThat(orderResponse.getId()).isNotNull();
-
         assertThat(orderResponse)
                 .extracting("registeredDateTime", "totalPrice")
-                .contains();
+                .contains(now, 8500);
 
         assertThat(orderResponse.getProducts()).hasSize(2)
                 .extracting("productNumber", "price")
