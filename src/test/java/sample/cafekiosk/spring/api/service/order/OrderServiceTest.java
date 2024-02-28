@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.annotation.Transactional;
 import sample.cafekiosk.spring.api.service.order.request.OrderCreateRequest;
 import sample.cafekiosk.spring.api.service.order.response.OrderResponse;
 import sample.cafekiosk.spring.domain.order.OrderRepository;
@@ -19,14 +20,14 @@ import sample.cafekiosk.spring.domain.stock.StockRepository;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.tuple;
+import static org.assertj.core.api.Assertions.*;
 import static sample.cafekiosk.spring.domain.product.ProductSellingStatus.SELLING;
 import static sample.cafekiosk.spring.domain.product.ProductType.*;
 
 @SpringBootTest
 @ActiveProfiles("test")
 //@DataJpaTest
+//@Transactional
 class OrderServiceTest {
 
     @Autowired
@@ -45,7 +46,7 @@ class OrderServiceTest {
         orderProductRepository.deleteAllInBatch();
         orderRepository.deleteAllInBatch();
         productRepository.deleteAllInBatch();
-//        stockRepository.deleteAllInBatch();
+        stockRepository.deleteAllInBatch();
     }
 
     @Test
@@ -58,10 +59,16 @@ class OrderServiceTest {
 
         productRepository.saveAll(List.of(product1, product2, product3));
 
+        Stock stock1 = Stock.create("001", 2);
+        Stock stock2 = Stock.create("002", 2);
+
+        stockRepository.saveAll(List.of(stock1, stock2));
+
         OrderCreateRequest orderCreateRequest = OrderCreateRequest.builder()
                 .productNumbers(List.of("001", "002"))
                 .build();
         LocalDateTime now = LocalDateTime.now();
+
         // when
         OrderResponse orderResponse = orderService.createOrder(orderCreateRequest, now);
 
@@ -120,11 +127,10 @@ class OrderServiceTest {
         Product product1 = createProduct(BOTTLE, "001", 4000);
         Product product2 = createProduct(BAKERY, "002", 4500);
         Product product3 = createProduct(HANDMADE, "003", 5000);
-
         productRepository.saveAll(List.of(product1, product2, product3));
+
         Stock stock1 = Stock.create("001", 2);
         Stock stock2 = Stock.create("002", 2);
-
         stockRepository.saveAll(List.of(stock1, stock2));
 
         OrderCreateRequest orderCreateRequest = OrderCreateRequest.builder()
@@ -159,6 +165,35 @@ class OrderServiceTest {
                         tuple("002", 1)
                 );
 
+    }
+
+    @Test
+    @DisplayName("재고가 부족한 상품으로 주문을 생성시 예외가 발생")
+    void createOrderWithNoStock() {
+
+        //given
+        Product product1 = createProduct(BOTTLE, "001", 4000);
+        Product product2 = createProduct(BAKERY, "002", 4500);
+        Product product3 = createProduct(HANDMADE, "003", 5000);
+        productRepository.saveAll(List.of(product1, product2, product3));
+
+        Stock stock1 = Stock.create("001", 2);
+        Stock stock2 = Stock.create("002", 1);
+
+        stock1.deductQuantity(1);   //todo
+
+        stockRepository.saveAll(List.of(stock1, stock2));
+
+        OrderCreateRequest orderCreateRequest = OrderCreateRequest.builder()
+                .productNumbers(List.of("001", "001","002", "003"))
+                .build();
+
+        LocalDateTime now = LocalDateTime.now();
+
+        // when/then
+        assertThatThrownBy(() -> orderService.createOrder(orderCreateRequest, now))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("재고가 부족합니다.");
     }
 
     private Product createProduct(ProductType productType, String productNumber, int price) {
