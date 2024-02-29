@@ -3,10 +3,10 @@ package sample.cafekiosk.spring.api.controller.product.request;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import sample.cafekiosk.spring.api.service.product.request.ProductCreateServiceRequest;
 import sample.cafekiosk.spring.domain.product.Product;
 import sample.cafekiosk.spring.domain.product.ProductSellingStatus;
 import sample.cafekiosk.spring.domain.product.ProductType;
@@ -35,6 +35,15 @@ public class ProductCreateRequest {
     public Product toEntity(String nextProductNumber) {
         return Product.builder()
                 .productNumber(nextProductNumber)
+                .price(price)
+                .name(name)
+                .sellingStatus(sellingStatus)
+                .type(type)
+                .build();
+    }
+
+    public ProductCreateServiceRequest toServiceRequest() {
+        return ProductCreateServiceRequest.builder()
                 .price(price)
                 .name(name)
                 .sellingStatus(sellingStatus)
