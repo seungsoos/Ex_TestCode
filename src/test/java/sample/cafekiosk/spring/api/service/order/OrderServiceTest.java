@@ -179,7 +179,14 @@ class OrderServiceTest {
         Stock stock1 = Stock.create("001", 2);
         Stock stock2 = Stock.create("002", 1);
 
-        stock1.deductQuantity(1);   //todo
+        /**
+         * 테스트 환경의 독립성을 보장해야함.
+         * 재고부족시 주문을 생성시 예외가 발생하기 위함이지만,
+         *
+         * 재고보다 주문을 많이 넣을시 다른예외가발생하기떄문에
+         * 테스트 독립성 보장이 되지않았다.
+         */
+        stock1.deductQuantity(1);
 
         stockRepository.saveAll(List.of(stock1, stock2));
 
@@ -196,7 +203,7 @@ class OrderServiceTest {
     }
 
     private Product createProduct(ProductType productType, String productNumber, int price) {
-      return Product.builder()
+        return Product.builder()
                 .productNumber(productNumber)
                 .type(productType)
                 .sellingStatus(SELLING)
